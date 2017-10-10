@@ -1,7 +1,9 @@
 # cube.obj
 #
+mtllib cube.mtl
 
 g cube
+usemtl default
 
 v  -1.0  -1.0  -1.0
 v  -1.0  -1.0   1.0

@@ -1,10 +1,11 @@
 
 _SOURCES = $(wildcard *.go)
+_OUT = Textured.$(shell uname -m)
 
 .PHONY: all
-all: Textured
+all: $(_OUT) 
 
-Textured: $(_SOURCES)
-	gofmt -s -w $(_SOURCES)
+$(_OUT): $(_SOURCES) ../../dusk/libdusk.a
 	goimports -w $(_SOURCES)
-	go build .
+	gofmt -s -w $(_SOURCES)
+	go build -o $@ .

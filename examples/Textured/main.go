@@ -6,8 +6,10 @@ import (
 	"github.com/WhoBrokeTheBuild/GoDusk/dusk"
 )
 
-func update(ctx *dusk.UpdateContext) {
-	//dusk.LogInfo("Update FPS: %.2f, Delta: %.3f, Elapsed: %.2f, Total: %.2f", ctx.CurrentFps, ctx.DeltaTime, ctx.ElapsedTime, ctx.TotalTime)
+var model *dusk.Model
+
+func render(ctx *dusk.RenderContext) {
+	model.Render()
 }
 
 func main() {
@@ -15,15 +17,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer app.Cleanup()
 
-	app.EvtUpdate = append(app.EvtUpdate, update)
+	app.EvtRender = append(app.EvtRender, render)
 
-	model, err := dusk.NewModelFromFile("cube.obj")
+	model, err = dusk.NewModelFromFile("cube.obj")
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	_ = model
 
 	app.Start()
 }
