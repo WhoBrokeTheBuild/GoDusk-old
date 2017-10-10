@@ -1,6 +1,19 @@
-.PHONY: all
-all: 
-	@gofmt -s -w dusk/*.go
-	@goimports -w dusk/*.go
-	@cd dusk && go build -o libdusk.a .
 
+_SOURCES = $(shell find . -name '*.go')
+
+.PHONY: all
+all: gofmt goimports dusk examples
+
+.PHONY: dusk
+dusk:
+	cd dusk && go build
+
+.PHONY: gofmt
+gofmt:
+	gofmt -s -w $(_SOURCES)
+
+.PHONY: goimports
+goimports:
+	goimports -w $(_SOURCES)
+
+include examples/Makefile.mk

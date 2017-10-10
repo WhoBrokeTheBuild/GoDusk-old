@@ -2,11 +2,9 @@ package dusk
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -99,68 +97,6 @@ func NewApp() (App, error) {
 
 	gl.ClearColor(0.3, 0.3, 0.3, 1.0)
 
-	// --
-	// --
-	// --
-
-	progId := gl.CreateProgram()
-
-	vertId := gl.CreateShader(gl.VERTEX_SHADER)
-
-	srcs, free := gl.Strs(vertShader)
-	gl.ShaderSource(vertId, 1, srcs, nil)
-	free()
-
-	gl.CompileShader(vertId)
-
-	fragId := gl.CreateShader(gl.FRAGMENT_SHADER)
-
-	srcs, free = gl.Strs(fragShader)
-	gl.ShaderSource(fragId, 1, srcs, nil)
-	free()
-
-	gl.CompileShader(fragId)
-
-	gl.AttachShader(progId, vertId)
-	gl.AttachShader(progId, fragId)
-	gl.LinkProgram(progId)
-
-	var status int32
-	gl.GetProgramiv(progId, gl.LINK_STATUS, &status)
-	if status == gl.FALSE {
-		var logLength int32
-		gl.GetProgramiv(progId, gl.INFO_LOG_LENGTH, &logLength)
-
-		log := strings.Repeat("\x00", int(logLength+1))
-		gl.GetProgramInfoLog(progId, logLength, nil, gl.Str(log))
-
-		fmt.Printf("failed to link program: %v", log)
-	}
-
-	gl.DeleteShader(vertId)
-	gl.DeleteShader(fragId)
-
-	gl.UseProgram(progId)
-
-	model := mgl32.Ident4()
-	view := mgl32.LookAt(
-		3, 3, 3,
-		0, 0, 0,
-		0, 1, 0,
-	)
-	projection := mgl32.Perspective(
-		mgl32.DegToRad(45.0),
-		float32(app.WindowWidth)/float32(app.WindowHeight),
-		0.001, 1024.0,
-	)
-	mvp := projection.Mul4(view.Mul4(model))
-
-	gl.UniformMatrix4fv(gl.GetUniformLocation(progId, gl.Str("_MVP\x00")), 1, false, &mvp[0])
-
-	// --
-	// --
-	// --
-
 	return app, err
 }
 
@@ -239,39 +175,3 @@ func (app App) Start() error {
 	sdl.Quit()
 	return nil
 }
-
-var vertShader = `
-#version 330 core
-
-uniform mat4 _MVP;
-
-in layout(location = 0) vec3 _Vertex;
-in layout(location = 1) vec3 _Normal;
-in layout(location = 2) vec2 _TexCoord;
-
-out vec4 p_Vertex;
-out vec4 p_Normal;
-out vec2 p_TexCoord;
-
-void main() {
-	p_Vertex = _MVP * vec4(_Vertex, 1.0);
-	p_Normal = _MVP * vec4(_Normal, 1.0);
-	p_TexCoord = _TexCoord;
-
-	gl_Position = _MVP * vec4(_Vertex, 1.0);
-}
-` + "\x00"
-
-var fragShader = `
-#version 330 core
-
-in vec4 p_Vertex;
-in vec4 p_Normal;
-in vec2 p_TexCoord;
-
-out vec4 o_Color;
-
-void main() {
-	o_Color = vec4(1, 0, 0, 1);
-}
-` + "\x00"
