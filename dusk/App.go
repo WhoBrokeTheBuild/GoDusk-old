@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -14,8 +15,9 @@ type App struct {
 	WindowTitle  string
 	TargetFps    float32
 
-	EvtUpdate []func(ctx *UpdateContext)
-	EvtRender []func(ctx *RenderContext)
+	EvtUpdate *Event
+	EvtRender *Event
+	EvtResize *Event
 
 	updateCtx  UpdateContext
 	renderCtx  RenderContext
@@ -32,6 +34,9 @@ func NewApp() (App, error) {
 		WindowWidth:  640,
 		WindowHeight: 480,
 		TargetFps:    60,
+		EvtUpdate:    NewEvent(),
+		EvtRender:    NewEvent(),
+		EvtResize:    NewEvent(),
 		updateCtx: UpdateContext{
 			Frame: 0,
 		},
@@ -130,6 +135,18 @@ func (app App) Start() error {
 			switch evt.(type) {
 			case *sdl.QuitEvent:
 				app.running = false
+			case *sdl.WindowEvent:
+				windowEvt := evt.(*sdl.WindowEvent)
+				switch windowEvt.Event {
+				case sdl.WINDOWEVENT_RESIZED:
+
+					gl.Viewport(0, 0, windowEvt.Data1, windowEvt.Data2)
+					app.EvtResize.Call(mgl32.Vec2{
+						float32(windowEvt.Data1),
+						float32(windowEvt.Data2),
+					})
+				}
+
 			}
 		}
 
@@ -137,17 +154,13 @@ func (app App) Start() error {
 		app.updateCtx.ElapsedTime = elapsedTime
 		app.updateCtx.TotalTime += elapsedTime
 
-		for _, f := range app.EvtUpdate {
-			f(&app.updateCtx)
-		}
+		app.EvtUpdate.Call(&app.updateCtx)
 
 		frameElap += elapsedTime
 		if frameDelay <= frameElap {
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-			for _, f := range app.EvtRender {
-				f(&app.renderCtx)
-			}
+			app.EvtRender.Call(&app.renderCtx)
 
 			sdl.GL_SwapWindow(app.sdlWindow)
 

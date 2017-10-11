@@ -33,7 +33,7 @@ type Model struct {
 
 func NewModel() (*Model, error) {
 	return &Model{
-		Transform: mgl32.Mat4{},
+		Transform: mgl32.Ident4(),
 		glVao:     0,
 		glVbos:    [3]uint32{0, 0, 0},
 	}, nil
@@ -49,6 +49,11 @@ func NewModelFromFile(filename string) (*Model, error) {
 		return model, err
 	}
 	return model, nil
+}
+
+func (model *Model) Cleanup() {
+	gl.DeleteBuffers(3, &model.glVbos[0])
+	gl.DeleteVertexArrays(1, &model.glVao)
 }
 
 func (model *Model) LoadFromFile(filename string) error {

@@ -43,15 +43,15 @@ func NewShader(filenames ...string) (*Shader, error) {
 		log := strings.Repeat("\x00", int(logLength+1))
 		gl.GetProgramInfoLog(glProgId, logLength, nil, gl.Str(log))
 
-        return nil, fmt.Errorf("Failed to link shader program: %v", log)
+		return nil, fmt.Errorf("Failed to link shader program: %v", log)
 	}
 
-	shader := Shader{
+	shader := &Shader{
 		glId: glProgId,
 	}
 	glProgId = 0
 
-	return &shader, nil
+	return shader, nil
 }
 
 func (shader *Shader) Cleanup() {
@@ -100,7 +100,7 @@ func compileShader(filename string) (uint32, error) {
 		log := strings.Repeat("\x00", int(logLength+1))
 		gl.GetShaderInfoLog(glId, logLength, nil, gl.Str(log))
 
-        return glId, fmt.Errorf("Failed to compile shader '%v': %v", filename, log)
+		return glId, fmt.Errorf("Failed to compile shader '%v': %v", filename, log)
 	}
 
 	return glId, nil

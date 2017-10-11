@@ -1,54 +1,69 @@
 package main
 
 import (
-	"github.com/WhoBrokeTheBuild/GoDusk/dusk"
+	"runtime"
+
 	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/WhoBrokeTheBuild/GoDusk/dusk"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+var camera *dusk.Camera
+var shader *dusk.Shader
 var model *dusk.Model
 
-func render(ctx *dusk.RenderContext) {
-	model.Render()
-}
-
 func main() {
+	runtime.LockOSThread()
+
 	app, err := dusk.NewApp()
 	if err != nil {
 		dusk.LogError("%v", err)
-        return
+		return
 	}
 	defer app.Cleanup()
 
-	app.EvtRender = append(app.EvtRender, render)
+    rotation := float32(0)
 
-	shader, err := dusk.NewShader("assets/default.vs.glsl", "assets/default.fs.glsl")
+    update := func(data interface{}) {
+        ctx := data.(*dusk.UpdateContext)
+
+        rotation += 2.0 * ctx.DeltaTime
+    }
+
+    render := func(data interface{}) {
+        //ctx := data.(*dusk.RenderContext)
+
+        model.Transform = model.Transform.Mul4(mgl32.HomogRotate3D(mgl32.DegToRad(rotation), mgl32.Vec3{0, 1, 0}))
+        rotation = 0.0
+
+        mvp := camera.Proj.Mul4(camera.View.Mul4(model.Transform))
+        gl.UniformMatrix4fv(shader.GetUniformLocation("_MVP"), 1, false, &mvp[0])
+
+        model.Render()
+    }
+
+    app.EvtUpdate.Subscribe(&update)
+    app.EvtRender.Subscribe(&render)
+
+	camera = dusk.NewCamera(&app, 45.0, 0.1, 100.0)
+	defer camera.Cleanup(&app)
+
+	camera.SetPosition(mgl32.Vec3{3, 3, 3})
+	camera.SetDirection(mgl32.Vec3{-1, -1, -1})
+
+	shader, err = dusk.NewShader("assets/default.vs.glsl", "assets/default.fs.glsl")
 	if err != nil {
 		dusk.LogError("%v", err)
-        return
+		return
 	}
 	shader.Use()
-
-	modelMat := mgl32.Ident4()
-	viewMat := mgl32.LookAt(
-		3, 3, 3,
-		0, 0, 0,
-		0, 1, 0,
-	)
-	projMat := mgl32.Perspective(
-		mgl32.DegToRad(45.0),
-		float32(app.WindowWidth)/float32(app.WindowHeight),
-		0.001, 1024.0,
-	)
-	mvp := projMat.Mul4(viewMat.Mul4(modelMat))
-
-	gl.UniformMatrix4fv(shader.GetUniformLocation("_MVP"), 1, false, &mvp[0])
 
 	model, err = dusk.NewModelFromFile("assets/cube.obj")
 	if err != nil {
 		dusk.LogError("%v", err)
-        return
+		return
 	}
+	defer model.Cleanup()
 
 	app.Start()
 }
