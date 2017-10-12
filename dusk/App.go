@@ -2,6 +2,7 @@ package dusk
 
 import (
 	"fmt"
+	"io/ioutil"
 	"time"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -15,9 +16,11 @@ type App struct {
 	WindowTitle  string
 	TargetFps    float32
 
-	EvtUpdate *Event
-	EvtRender *Event
-	EvtResize *Event
+	EvtUpdate *Event // ctx *UpdateContext
+	EvtRender *Event // ctx *RenderContext
+	EvtResize *Event // size mgl32.Vec3
+
+	AssetFunction func(string) ([]byte, error)
 
 	updateCtx  UpdateContext
 	renderCtx  RenderContext
@@ -26,17 +29,22 @@ type App struct {
 	running    bool
 }
 
+func AssetFromFile(filename string) ([]byte, error) {
+	return ioutil.ReadFile(filename)
+}
+
 func NewApp() (App, error) {
 	var err error
 
 	app := App{
-		WindowTitle:  "Dusk",
-		WindowWidth:  640,
-		WindowHeight: 480,
-		TargetFps:    60,
-		EvtUpdate:    NewEvent(),
-		EvtRender:    NewEvent(),
-		EvtResize:    NewEvent(),
+		WindowTitle:   "Dusk",
+		WindowWidth:   640,
+		WindowHeight:  480,
+		TargetFps:     60,
+		EvtUpdate:     NewEvent(),
+		EvtRender:     NewEvent(),
+		EvtResize:     NewEvent(),
+		AssetFunction: AssetFromFile,
 		updateCtx: UpdateContext{
 			Frame: 0,
 		},

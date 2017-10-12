@@ -2,8 +2,8 @@ package dusk
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
-	"os"
 	"path"
 	"strings"
 
@@ -21,6 +21,7 @@ type modelGroup struct {
 	DrawMode uint32
 	Start    int32
 	Count    int32
+	Material *Material
 }
 
 type Model struct {
@@ -31,7 +32,7 @@ type Model struct {
 	groups []modelGroup
 }
 
-func NewModel() (*Model, error) {
+func NewModel(app *App) (*Model, error) {
 	return &Model{
 		Transform: mgl32.Ident4(),
 		glVao:     0,
@@ -39,12 +40,12 @@ func NewModel() (*Model, error) {
 	}, nil
 }
 
-func NewModelFromFile(filename string) (*Model, error) {
-	model, err := NewModel()
+func NewModelFromFile(app *App, filename string) (*Model, error) {
+	model, err := NewModel(app)
 	if err != nil {
 		return model, err
 	}
-	err = model.LoadFromFile(filename)
+	err = model.LoadFromFile(app, filename)
 	if err != nil {
 		return model, err
 	}
@@ -56,9 +57,11 @@ func (model *Model) Cleanup() {
 	gl.DeleteVertexArrays(1, &model.glVao)
 }
 
-func (model *Model) LoadFromFile(filename string) error {
+func (model *Model) LoadFromFile(app *App, filename string) error {
+	LogLoad("Model '%v'", filename)
+
 	// Holds a material
-	type Material struct {
+	type MatDef struct {
 		Ambient     mgl32.Vec3
 		Diffuse     mgl32.Vec3
 		Specular    mgl32.Vec3
@@ -67,6 +70,7 @@ func (model *Model) LoadFromFile(filename string) error {
 		AmbientMap  string
 		SpecularMap string
 		DiffuseMap  string
+		BumpMap     string
 	}
 
 	// Holds a single face
@@ -83,24 +87,73 @@ func (model *Model) LoadFromFile(filename string) error {
 		Faces    []Face
 	}
 
-	LoadMaterials := func(filename string) ([]Material, error) {
-		materials := []Material{}
+	LoadMaterials := func(filename string) (map[string]*MatDef, error) {
+		LogLoad("Material '%v'", filename)
+
+		materials := map[string]*MatDef{}
+
+		dirname := path.Dir(filename)
 
 		// Open the .mtl file
-		file, err := os.Open(filename)
+		data, err := app.AssetFunction(filename)
 		if err != nil {
 			return materials, err
 		}
-		defer file.Close()
 
 		// Create a reader with a specific buffer size, needed by reader.ReadLine()
-		reader := bufio.NewReaderSize(file, 1024)
+		reader := bufio.NewReader(bytes.NewReader(data))
 
 		var line string
+		var curMat string
 
 		tmp, _, err := reader.ReadLine()
 		for ; err == nil; tmp, _, err = reader.ReadLine() {
 			line = string(tmp)
+
+			// Ignore empty lines and comments
+			if len(line) == 0 || line[0] == '#' {
+				continue
+			}
+
+			// Split on the first ' ', ignore half lines
+			parts := strings.SplitN(line, " ", 2)
+			if len(parts) == 0 {
+				continue
+			}
+
+			switch parts[0] {
+			case "newmtl":
+
+				curMat = parts[1]
+				materials[curMat] = &MatDef{}
+
+			case "Ka":
+				fmt.Sscanf(parts[1], "%f %f %f",
+					&materials[curMat].Ambient[0],
+					&materials[curMat].Ambient[1],
+					&materials[curMat].Ambient[2],
+				)
+			case "Kd":
+				fmt.Sscanf(parts[1], "%f %f %f",
+					&materials[curMat].Diffuse[0],
+					&materials[curMat].Diffuse[1],
+					&materials[curMat].Diffuse[2],
+				)
+			case "Ks":
+				fmt.Sscanf(parts[1], "%f %f %f",
+					&materials[curMat].Specular[0],
+					&materials[curMat].Specular[1],
+					&materials[curMat].Specular[2],
+				)
+			case "map_Ka":
+				materials[curMat].AmbientMap = path.Join(dirname, parts[1])
+			case "map_Kd":
+				materials[curMat].DiffuseMap = path.Join(dirname, parts[1])
+			case "map_Ks":
+				materials[curMat].SpecularMap = path.Join(dirname, parts[1])
+			case "map_bump":
+				materials[curMat].BumpMap = path.Join(dirname, parts[1])
+			}
 
 			_ = line
 		}
@@ -109,19 +162,18 @@ func (model *Model) LoadFromFile(filename string) error {
 	}
 
 	// Open the .obj file
-	file, err := os.Open(filename)
+	data, err := app.AssetFunction(filename)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
 	// Get the directory name for loading .mtl files
 	dirname := path.Dir(filename)
 
 	// Create a reader with a specific buffer size, needed by reader.ReadLine()
-	reader := bufio.NewReaderSize(file, 1024)
+	reader := bufio.NewReader(bytes.NewReader(data))
 
-	materials := []Material{}
+	materials := map[string]*MatDef{}
 
 	// Create a list of groups, and get a pointer to the first
 	groups := []Group{{}}
@@ -165,7 +217,9 @@ func (model *Model) LoadFromFile(filename string) error {
 			if err != nil {
 				return err
 			}
-			materials = append(materials, newmats...)
+			for k, v := range newmats {
+				materials[k] = v
+			}
 
 		case "o":
 			fallthrough
@@ -215,14 +269,14 @@ func (model *Model) LoadFromFile(filename string) error {
 				count, err = fmt.Sscanf(parts[1],
 					"%d/%d/%d %d/%d/%d %d/%d/%d",
 					&tmpFace.VertInds[0],
-					&tmpFace.NormInds[0],
 					&tmpFace.TxcdInds[0],
+					&tmpFace.NormInds[0],
 					&tmpFace.VertInds[1],
-					&tmpFace.NormInds[1],
 					&tmpFace.TxcdInds[1],
+					&tmpFace.NormInds[1],
 					&tmpFace.VertInds[2],
-					&tmpFace.NormInds[2],
 					&tmpFace.TxcdInds[2],
+					&tmpFace.NormInds[2],
 				)
 				if err != nil || count != 9 {
 					return fmt.Errorf("Malformed OBJ file '%v'", line)
@@ -315,12 +369,30 @@ func (model *Model) LoadFromFile(filename string) error {
 			}
 		}
 
+		var newMaterial *Material
+		if mat, ok := materials[group.Material]; ok {
+			newMaterial, err = NewMaterial(
+				app,
+				mat.Ambient,
+				mat.Diffuse,
+				mat.Specular,
+				mat.Shininess,
+				mat.Dissolve,
+				mat.AmbientMap,
+				mat.DiffuseMap,
+				mat.SpecularMap,
+				mat.BumpMap,
+			)
+			if err != nil {
+				return err
+			}
+		}
 		vertCount := int32(len(group.Faces) * 3 * 3)
 		model.groups = append(model.groups, modelGroup{
 			DrawMode: gl.TRIANGLES,
 			Start:    start,
 			Count:    vertCount,
-			// Material: materials[group.Material]
+			Material: newMaterial,
 		})
 		start += vertCount
 	}
@@ -357,12 +429,14 @@ func (model *Model) LoadFromFile(filename string) error {
 	return nil
 }
 
-func (model *Model) Render() {
+func (model *Model) Render(shader *Shader) {
 	gl.BindVertexArray(model.glVao)
 
 	for g := range model.groups {
 		group := &model.groups[g]
-
+		if group.Material != nil {
+			group.Material.Bind(shader)
+		}
 		gl.DrawArrays(group.DrawMode, group.Start, group.Count)
 	}
 }

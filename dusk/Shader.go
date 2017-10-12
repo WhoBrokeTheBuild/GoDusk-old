@@ -2,7 +2,6 @@ package dusk
 
 import (
 	"fmt"
-	"io/ioutil"
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -12,7 +11,7 @@ type Shader struct {
 	glId uint32
 }
 
-func NewShader(filenames ...string) (*Shader, error) {
+func NewShader(app *App, filenames ...string) (*Shader, error) {
 	glProgId := gl.CreateProgram()
 	defer gl.DeleteShader(glProgId)
 
@@ -24,7 +23,7 @@ func NewShader(filenames ...string) (*Shader, error) {
 	}()
 
 	for _, f := range filenames {
-		glId, err := compileShader(f)
+		glId, err := compileShader(app, f)
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +65,7 @@ func (shader *Shader) GetUniformLocation(name string) int32 {
 	return gl.GetUniformLocation(shader.glId, gl.Str(name+"\x00"))
 }
 
-func compileShader(filename string) (uint32, error) {
+func compileShader(app *App, filename string) (uint32, error) {
 	var shaderType uint32
 	if strings.HasSuffix(filename, ".vs.glsl") {
 		shaderType = gl.VERTEX_SHADER
@@ -76,7 +75,7 @@ func compileShader(filename string) (uint32, error) {
 		shaderType = gl.GEOMETRY_SHADER
 	}
 
-	data, err := ioutil.ReadFile(filename)
+	data, err := app.AssetFunction(filename)
 	if err != nil {
 		return 0, err
 	}
