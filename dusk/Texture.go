@@ -46,14 +46,10 @@ func NewTexture(app *App, filename string) (*Texture, error) {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 	gl.TexImage2D(
-		gl.TEXTURE_2D,
-		0,
-		gl.RGBA,
+		gl.TEXTURE_2D, 0, gl.RGBA,
 		int32(rgba.Rect.Size().X),
 		int32(rgba.Rect.Size().Y),
-		0,
-		gl.RGBA,
-		gl.UNSIGNED_BYTE,
+		0, gl.RGBA, gl.UNSIGNED_BYTE,
 		gl.Ptr(rgba.Pix))
 
 	return &Texture{

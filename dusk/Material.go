@@ -12,6 +12,13 @@ const (
 	BUMP_TEXID     = 3
 )
 
+const (
+	AMBIENT_MAP_FLAG  = 1
+	DIFFUSE_MAP_FLAG  = 2
+	SPECULAR_MAP_FLAG = 4
+	BUMP_MAP_FLAG     = 8
+)
+
 type Material struct {
 	ambient     mgl32.Vec3
 	diffuse     mgl32.Vec3
@@ -22,6 +29,7 @@ type Material struct {
 	diffuseMap  *Texture
 	specularMap *Texture
 	bumpMap     *Texture
+	mapFlags    uint32
 }
 
 func NewMaterial(
@@ -36,11 +44,14 @@ func NewMaterial(
 	var specularTex *Texture
 	var bumpTex *Texture
 
+	var flags uint32
+
 	if ambientMap != "" {
 		ambientTex, err = NewTexture(app, ambientMap)
 		if err != nil {
 			return nil, err
 		}
+		flags |= AMBIENT_MAP_FLAG
 	}
 
 	if diffuseMap != "" {
@@ -48,6 +59,7 @@ func NewMaterial(
 		if err != nil {
 			return nil, err
 		}
+		flags |= DIFFUSE_MAP_FLAG
 	}
 
 	if specularMap != "" {
@@ -55,6 +67,7 @@ func NewMaterial(
 		if err != nil {
 			return nil, err
 		}
+		flags |= SPECULAR_MAP_FLAG
 	}
 
 	if bumpMap != "" {
@@ -62,6 +75,7 @@ func NewMaterial(
 		if err != nil {
 			return nil, err
 		}
+		flags |= BUMP_MAP_FLAG
 	}
 
 	return &Material{
@@ -74,10 +88,12 @@ func NewMaterial(
 		diffuseMap:  diffuseTex,
 		specularMap: specularTex,
 		bumpMap:     bumpTex,
+		mapFlags:    flags,
 	}, nil
 }
 
 func (mat *Material) Bind(shader *Shader) {
+	gl.Uniform1ui(shader.GetUniformLocation("_MapFlags"), mat.mapFlags)
 	gl.Uniform3fv(shader.GetUniformLocation("_Ambient"), 1, &mat.ambient[0])
 	gl.Uniform3fv(shader.GetUniformLocation("_Diffuse"), 1, &mat.diffuse[0])
 	gl.Uniform3fv(shader.GetUniformLocation("_Specular"), 1, &mat.specular[0])
@@ -85,25 +101,25 @@ func (mat *Material) Bind(shader *Shader) {
 	gl.Uniform1f(shader.GetUniformLocation("_Dissolve"), mat.dissolve)
 
 	if mat.ambientMap != nil {
-		gl.Uniform1i(shader.GetUniformLocation("_AmbientMat"), AMBIENT_TEXID)
+		gl.Uniform1i(shader.GetUniformLocation("_AmbientMap"), AMBIENT_TEXID)
 		gl.ActiveTexture(gl.TEXTURE0 + AMBIENT_TEXID)
 		mat.ambientMap.Bind()
 	}
 
 	if mat.diffuseMap != nil {
-		gl.Uniform1i(shader.GetUniformLocation("_DiffuseMat"), DIFFUSE_TEXID)
+		gl.Uniform1i(shader.GetUniformLocation("_DiffuseMap"), DIFFUSE_TEXID)
 		gl.ActiveTexture(gl.TEXTURE0 + DIFFUSE_TEXID)
 		mat.diffuseMap.Bind()
 	}
 
 	if mat.specularMap != nil {
-		gl.Uniform1i(shader.GetUniformLocation("_SpecularMat"), SPECULAR_TEXID)
+		gl.Uniform1i(shader.GetUniformLocation("_SpecularMap"), SPECULAR_TEXID)
 		gl.ActiveTexture(gl.TEXTURE0 + SPECULAR_TEXID)
 		mat.specularMap.Bind()
 	}
 
 	if mat.bumpMap != nil {
-		gl.Uniform1i(shader.GetUniformLocation("_BumpMat"), BUMP_TEXID)
+		gl.Uniform1i(shader.GetUniformLocation("_BumpMap"), BUMP_TEXID)
 		gl.ActiveTexture(gl.TEXTURE0 + BUMP_TEXID)
 		mat.bumpMap.Bind()
 	}

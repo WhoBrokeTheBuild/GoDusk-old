@@ -125,7 +125,17 @@ func (model *Model) LoadFromFile(app *App, filename string) error {
 			case "newmtl":
 
 				curMat = parts[1]
-				materials[curMat] = &MatDef{}
+				materials[curMat] = &MatDef{
+					Ambient:     mgl32.Vec3{0, 0, 0},
+					Diffuse:     mgl32.Vec3{0, 0, 0},
+					Specular:    mgl32.Vec3{0, 0, 0},
+					Shininess:   0.0,
+					Dissolve:    0.0,
+					AmbientMap:  "",
+					SpecularMap: "",
+					DiffuseMap:  "",
+					BumpMap:     "",
+				}
 
 			case "Ka":
 				fmt.Sscanf(parts[1], "%f %f %f",
@@ -145,6 +155,10 @@ func (model *Model) LoadFromFile(app *App, filename string) error {
 					&materials[curMat].Specular[1],
 					&materials[curMat].Specular[2],
 				)
+			case "Ns":
+				fmt.Sscanf(parts[1], "%f", &materials[curMat].Shininess)
+			case "d":
+				fmt.Sscanf(parts[1], "%f", &materials[curMat].Dissolve)
 			case "map_Ka":
 				materials[curMat].AmbientMap = path.Join(dirname, parts[1])
 			case "map_Kd":
@@ -154,8 +168,6 @@ func (model *Model) LoadFromFile(app *App, filename string) error {
 			case "map_bump":
 				materials[curMat].BumpMap = path.Join(dirname, parts[1])
 			}
-
-			_ = line
 		}
 
 		return materials, nil
@@ -231,7 +243,7 @@ func (model *Model) LoadFromFile(app *App, filename string) error {
 				groups = append(groups, Group{
 					Name: parts[1],
 				})
-				group = &groups[len(groups)]
+				group = &groups[len(groups)-1]
 			}
 
 		case "f":

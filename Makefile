@@ -1,5 +1,5 @@
 
-_SOURCES = $(shell find . -name '*.go')
+_SOURCES = $(shell find . -name '*.go' | grep -v '.gen')
 
 .PHONY: all
 all: gofmt goimports dusk examples

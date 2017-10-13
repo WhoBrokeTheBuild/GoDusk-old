@@ -17,7 +17,7 @@ var rotation = float32(0)
 var update = func(data interface{}) {
 	ctx := data.(*dusk.UpdateContext)
 
-	rotation += 2.0 * ctx.DeltaTime
+	rotation += 1.0 * ctx.DeltaTime
 }
 
 var render = func(data interface{}) {
@@ -27,7 +27,15 @@ var render = func(data interface{}) {
 	rotation = 0.0
 
 	mvp := camera.Proj.Mul4(camera.View.Mul4(model.Transform))
+	gl.UniformMatrix4fv(shader.GetUniformLocation("_Model"), 1, false, &model.Transform[0])
+	gl.UniformMatrix4fv(shader.GetUniformLocation("_View"), 1, false, &camera.View[0])
+	gl.UniformMatrix4fv(shader.GetUniformLocation("_Proj"), 1, false, &camera.Proj[0])
 	gl.UniformMatrix4fv(shader.GetUniformLocation("_MVP"), 1, false, &mvp[0])
+
+	eye := mgl32.Vec3{2, 2, 2}
+
+	gl.Uniform3fv(shader.GetUniformLocation("_LightPos"), 1, &eye[0])
+	gl.Uniform3fv(shader.GetUniformLocation("_ViewPos"), 1, &eye[0])
 
 	model.Render(shader)
 }
@@ -49,7 +57,7 @@ func main() {
 	camera = dusk.NewCamera(&app, 45.0, 0.1, 100.0)
 	defer camera.Cleanup(&app)
 
-	camera.SetPosition(mgl32.Vec3{3, 3, 3})
+	camera.SetPosition(mgl32.Vec3{2, 2, 2})
 	camera.SetDirection(mgl32.Vec3{-1, -1, -1})
 
 	shader, err = dusk.NewShader(&app, "assets/default.vs.glsl", "assets/default.fs.glsl")
@@ -59,7 +67,7 @@ func main() {
 	}
 	shader.Use()
 
-	model, err = dusk.NewModelFromFile(&app, "assets/crate/crate.obj")
+	model, err = dusk.NewModelFromFile(&app, "assets/globe/globe.obj")
 	if err != nil {
 		dusk.LogError("%v", err)
 		return
