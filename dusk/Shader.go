@@ -13,7 +13,6 @@ type Shader struct {
 
 func NewShader(app *App, filenames ...string) (*Shader, error) {
 	glProgId := gl.CreateProgram()
-	defer gl.DeleteShader(glProgId)
 
 	glIds := []uint32{}
 	defer func() {
@@ -25,6 +24,7 @@ func NewShader(app *App, filenames ...string) (*Shader, error) {
 	for _, f := range filenames {
 		glId, err := compileShader(app, f)
 		if err != nil {
+            gl.DeleteProgram(glProgId)
 			return nil, err
 		}
 
@@ -48,7 +48,6 @@ func NewShader(app *App, filenames ...string) (*Shader, error) {
 	shader := &Shader{
 		glId: glProgId,
 	}
-	glProgId = 0
 
 	return shader, nil
 }
