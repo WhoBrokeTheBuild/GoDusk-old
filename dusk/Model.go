@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"log"
 	"path"
 	"strings"
 
@@ -409,40 +410,102 @@ func (model *Model) LoadFromFile(app *App, filename string) error {
 		start += vertCount
 	}
 
+	var glerr uint32
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	gl.GenVertexArrays(1, &model.glVao)
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
+
 	gl.BindVertexArray(model.glVao)
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
+
 	gl.GenBuffers(3, &model.glVbos[0])
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, model.glVbos[0])
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 	gl.BufferData(gl.ARRAY_BUFFER, len(verts)*4, gl.Ptr(verts), gl.STATIC_DRAW)
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 	gl.VertexAttribPointer(VERT_ATTRIB, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 	gl.EnableVertexAttribArray(VERT_ATTRIB)
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 
 	if len(norms) == 0 {
 		gl.DeleteBuffers(1, &model.glVbos[1])
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 		model.glVbos[1] = 0
 	} else {
 		gl.BindBuffer(gl.ARRAY_BUFFER, model.glVbos[1])
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 		gl.BufferData(gl.ARRAY_BUFFER, len(norms)*4, gl.Ptr(norms), gl.STATIC_DRAW)
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 		gl.VertexAttribPointer(NORM_ATTRIB, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 		gl.EnableVertexAttribArray(NORM_ATTRIB)
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 	}
 
 	if len(txcds) == 0 {
 		gl.DeleteBuffers(1, &model.glVbos[2])
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 		model.glVbos[2] = 0
 	} else {
 		gl.BindBuffer(gl.ARRAY_BUFFER, model.glVbos[2])
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 		gl.BufferData(gl.ARRAY_BUFFER, len(txcds)*4, gl.Ptr(txcds), gl.STATIC_DRAW)
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 		gl.VertexAttribPointer(TXCD_ATTRIB, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 		gl.EnableVertexAttribArray(TXCD_ATTRIB)
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 	}
 
 	return nil
 }
 
 func (model *Model) Render(shader *Shader) {
+	var glerr uint32
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	gl.BindVertexArray(model.glVao)
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 
 	for g := range model.groups {
 		group := &model.groups[g]
@@ -450,5 +513,8 @@ func (model *Model) Render(shader *Shader) {
 			group.Material.Bind(shader)
 		}
 		gl.DrawArrays(group.DrawMode, group.Start, group.Count)
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 	}
 }

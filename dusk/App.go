@@ -3,6 +3,7 @@ package dusk
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"time"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -100,13 +101,31 @@ func NewApp() (App, error) {
 
 	sdl.GL_SetSwapInterval(1)
 
+	var glerr uint32
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	gl.Enable(gl.MULTISAMPLE)
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 
 	gl.Enable(gl.DEPTH_TEST)
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 	gl.DepthFunc(gl.LEQUAL)
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 
 	gl.Enable(gl.BLEND)
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 
 	gl.ClearColor(0.3, 0.3, 0.3, 1.0)
 

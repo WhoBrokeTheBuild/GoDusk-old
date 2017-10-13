@@ -1,6 +1,8 @@
 package dusk
 
 import (
+	"log"
+
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -93,34 +95,79 @@ func NewMaterial(
 }
 
 func (mat *Material) Bind(shader *Shader) {
+	var glerr uint32
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	gl.Uniform1ui(shader.GetUniformLocation("_MapFlags"), mat.mapFlags)
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 	gl.Uniform3fv(shader.GetUniformLocation("_Ambient"), 1, &mat.ambient[0])
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 	gl.Uniform3fv(shader.GetUniformLocation("_Diffuse"), 1, &mat.diffuse[0])
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 	gl.Uniform3fv(shader.GetUniformLocation("_Specular"), 1, &mat.specular[0])
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 	gl.Uniform1f(shader.GetUniformLocation("_Shininess"), mat.shininess)
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 	gl.Uniform1f(shader.GetUniformLocation("_Dissolve"), mat.dissolve)
+	if glerr = gl.GetError(); glerr > 0 {
+		log.Printf("gl.GetError returned %v", glerr)
+	}
 
 	if mat.ambientMap != nil {
 		gl.Uniform1i(shader.GetUniformLocation("_AmbientMap"), AMBIENT_TEXID)
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 		gl.ActiveTexture(gl.TEXTURE0 + AMBIENT_TEXID)
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 		mat.ambientMap.Bind()
 	}
 
 	if mat.diffuseMap != nil {
 		gl.Uniform1i(shader.GetUniformLocation("_DiffuseMap"), DIFFUSE_TEXID)
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 		gl.ActiveTexture(gl.TEXTURE0 + DIFFUSE_TEXID)
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 		mat.diffuseMap.Bind()
 	}
 
 	if mat.specularMap != nil {
 		gl.Uniform1i(shader.GetUniformLocation("_SpecularMap"), SPECULAR_TEXID)
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 		gl.ActiveTexture(gl.TEXTURE0 + SPECULAR_TEXID)
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 		mat.specularMap.Bind()
 	}
 
 	if mat.bumpMap != nil {
 		gl.Uniform1i(shader.GetUniformLocation("_BumpMap"), BUMP_TEXID)
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 		gl.ActiveTexture(gl.TEXTURE0 + BUMP_TEXID)
+		if glerr = gl.GetError(); glerr > 0 {
+			log.Printf("gl.GetError returned %v", glerr)
+		}
 		mat.bumpMap.Bind()
 	}
 }
